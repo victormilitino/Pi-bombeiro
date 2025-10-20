@@ -1,0 +1,106 @@
+.container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background-color: #203330;
+  font-family: "Inter", sans-serif;
+}
+
+.formContainer {
+  width: 50%;
+  background-color: #d9d9d9;
+  padding: 80px 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1d1b20;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #5c5c5c;
+  margin-bottom: 60px;
+}
+
+label {
+  font-size: 14px;
+  color: #1d1b20;
+  margin-bottom: 6px;
+}
+
+.input,
+.inputPassword {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #1d1b20;
+  background: transparent;
+  padding: 8px 0;
+  margin-bottom: 28px;
+  font-size: 14px;
+  color: #1d1b20;
+  outline: none;
+}
+
+.passwordContainer {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #1d1b20;
+  margin-bottom: 28px;
+}
+
+.passwordContainer input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 0;
+  outline: none;
+  font-size: 14px;
+}
+
+.iconEye {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.forgotPassword {
+  color: #1d1b20;
+  font-size: 13px;
+  margin-bottom: 40px;
+  text-decoration: none;
+}
+
+.loginButton {
+  background-color: #203330;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 14px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.loginButton:hover {
+  background-color: #1b2929;
+}
+
+.logoContainer {
+  width: 50%;
+  background-color: #203330;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo {
+  width: 280px;
+  height: 280px;
+}

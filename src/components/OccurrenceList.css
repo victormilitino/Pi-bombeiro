@@ -1,0 +1,200 @@
+/* ========== CONTAINER PRINCIPAL ========== */
+.occurrence-list-container {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ========== HEADER ========== */
+.occurrence-list-header {
+  background: linear-gradient(135deg, #2c5f5d 0%, #1e4442 100%);
+  padding: 16px 24px;
+  color: #fff;
+}
+
+.occurrence-list-title {
+  font-size: 1.1em;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.occurrence-list-title i {
+  font-size: 1.2em;
+}
+
+/* ========== TABELA ========== */
+.occurrence-list-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.occurrence-list-table thead {
+  background: #2c5f5d;
+  color: #fff;
+}
+
+.occurrence-list-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 0.85em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.occurrence-list-table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: background 0.2s ease;
+}
+
+.occurrence-list-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.occurrence-list-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.occurrence-list-table td {
+  padding: 16px;
+  font-size: 0.9em;
+  color: #4b5563;
+}
+
+/* ========== AÇÕES ========== */
+.occurrence-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.action-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 0.95em;
+}
+
+.action-icon:hover {
+  background: #2c5f5d;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.action-icon:active {
+  transform: translateY(0);
+}
+
+/* ========== STATUS BADGES ========== */
+.status-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8em;
+  font-weight: 600;
+  text-align: center;
+}
+
+.status-novo {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-em-analise {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-concluido {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* ========== ESTADO VAZIO ========== */
+.empty-state {
+  text-align: center;
+  padding: 60px 40px;
+  color: #9ca3af;
+}
+
+.empty-state-icon {
+  font-size: 3em;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state-icon i {
+  font-size: 1em;
+}
+
+.empty-state-text {
+  font-size: 1em;
+  margin: 0;
+  color: #6b7280;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+  .occurrence-list-header {
+    padding: 14px 20px;
+  }
+
+  .occurrence-list-title {
+    font-size: 1em;
+  }
+
+  .occurrence-list-table {
+    font-size: 0.85em;
+  }
+
+  .occurrence-list-table th,
+  .occurrence-list-table td {
+    padding: 10px 8px;
+  }
+
+  .action-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85em;
+  }
+
+  .occurrence-actions {
+    gap: 8px;
+  }
+
+  .status-badge {
+    font-size: 0.75em;
+    padding: 4px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .occurrence-list-title {
+    font-size: 0.9em;
+    gap: 8px;
+  }
+
+  .occurrence-list-table th,
+  .occurrence-list-table td {
+    padding: 8px 6px;
+  }
+
+  .action-icon {
+    width: 26px;
+    height: 26px;
+  }
+}

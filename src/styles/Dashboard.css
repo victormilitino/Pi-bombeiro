@@ -26,6 +26,7 @@ body {
   flex-direction: column;
   min-height: 100vh;
   background: #f5f7fa;
+  margin-left: 280px;
   width: calc(100% - 280px);
 }
 
@@ -53,12 +54,16 @@ body {
   width: 280px;
   min-width: 280px;
   background: linear-gradient(180deg, #1a1d29 0%, #252836 100%);
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
-  position: relative;
+  position: fixed;
+  left: 0;
+  top: 0;
   transition: all 0.3s ease;
+  overflow-y: auto;
+  z-index: 1000;
 }
 
 .sidebar-brand {
@@ -173,6 +178,8 @@ body {
   font-size: 0.8em;
   color: #a0a3bd;
 }
+
+
 
 .logout-btn {
   width: 100%;
@@ -761,6 +768,11 @@ body {
   .sidebar {
     width: 240px;
   }
+  
+  .main-content {
+    margin-left: 240px;
+    width: calc(100% - 240px);
+  }
 }
 
 @media (max-width: 768px) {
@@ -783,6 +795,11 @@ body {
 
   .sidebar {
     width: 80px;
+  }
+  
+  .main-content {
+    margin-left: 80px;
+    width: calc(100% - 80px);
   }
 
   .sidebar-brand span,
@@ -843,9 +860,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 10000;
   animation: fadeIn 0.3s ease;
   backdrop-filter: blur(4px);
+  overflow-y: auto;
 }
 
 @keyframes fadeIn {
@@ -866,6 +884,8 @@ body {
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.3s ease;
+  position: relative;
+  margin: 20px 0;
 }
 
 @keyframes slideUp {

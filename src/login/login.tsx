@@ -2,7 +2,7 @@ import React, { useState } from "react";
 // Importa o hook para navegação
 import { useNavigate } from "react-router-dom"; 
 import './login.css';
-import logo from "../assets/Sicog Logo PNG.png";
+import logo from "../assets/SicogLogo.png";
 
 // ===============================================
 // 1. DADOS DE CONTA SIMULADOS (Em Memória)
@@ -10,7 +10,8 @@ import logo from "../assets/Sicog Logo PNG.png";
 // ===============================================
 const USERS: Record<string, string> = {
     admin: "senha123", // Usuário e Senha de exemplo
-    saulo: "sisocc2025"
+    saulo: "sisocc2025", // Outro usuário de exemplo
+    victor: "123456", // Outro usuário de exemplo
 };
 
 // Componente de Login

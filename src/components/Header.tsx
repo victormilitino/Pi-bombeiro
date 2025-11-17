@@ -22,6 +22,8 @@ const Header: React.FC = () => {
 
   return (
     <header className="dashboard-header">
+
+      
       {/* Search Bar */}
       <div className="header-search">
         <i className="fas fa-search"></i>

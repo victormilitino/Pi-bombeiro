@@ -4,6 +4,8 @@ import { OccurrencesProvider } from "./components/OccurrencesContext";
 import Login from "./login/login";
 import DashboardLayout from "./components/DashboardLayout";
 import Lista from "./Lista/Lista";
+import MapPage from "./components/MapPage";
+import UsersPage from './pages/UsersPage';
 
 function App() {
   return (
@@ -17,6 +19,10 @@ function App() {
           <Route path="/dashboard" element={<DashboardLayout />} />
 
           <Route path="/occurrences" element={<Lista />} />
+
+          <Route path="/map" element={<MapPage />} />
+
+          <Route path="/users" element={<UsersPage />} />
 
           {/* Adicione outras rotas do sistema aqui */}
         </Routes>

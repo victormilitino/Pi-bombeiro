@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Dashboard.css";
-
+// Importe a sua logo
+import SicogLogo from "../assets/SicogLogo.png";
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
@@ -44,15 +45,16 @@ const Sidebar: React.FC = () => {
   const handleItemClick = (item: any) => {
     setActiveItem(item.id);
     // Navegação comentada pois as rotas ainda não existem
-    // navigate(item.path);
+    navigate(item.path);
   };
 
   return (
     <aside className="sidebar">
       {/* Logo/Brand */}
       <div className="sidebar-brand">
-        <i className="fas fa-shield-alt"></i>
-        <span>PI-Bombeiro</span>
+        {/* Substituímos o <i> pela <img> */}
+        <img src={SicogLogo} alt="Sicog Logo" className="brand-logo" />
+        <span>SISOCC</span>
       </div>
 
       {/* Menu Items */}

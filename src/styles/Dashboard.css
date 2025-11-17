@@ -1070,3 +1070,15 @@ body {
     justify-content: center;
   }
 }
+
+.sidebar-brand i {
+  font-size: 1.3em;
+  color: #4ecdc4;
+}
+
+
+.sidebar-brand .brand-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}

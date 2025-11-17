@@ -1,12 +1,12 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/Dashboard.css";
-// Importe a sua logo
 import SicogLogo from "../assets/SicogLogo.png";
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
-  const [activeItem, setActiveItem] = useState("dashboard");
+  const location = useLocation();
+  const currentPath = location.pathname;
 
   const handleLogout = () => {
     localStorage.removeItem("isAuthenticated");
@@ -43,18 +43,15 @@ const Sidebar: React.FC = () => {
   ];
 
   const handleItemClick = (item: any) => {
-    setActiveItem(item.id);
-    // Navegação comentada pois as rotas ainda não existem
+
     navigate(item.path);
   };
 
   return (
     <aside className="sidebar">
-      {/* Logo/Brand */}
       <div className="sidebar-brand">
-        {/* Substituímos o <i> pela <img> */}
         <img src={SicogLogo} alt="Sicog Logo" className="brand-logo" />
-        <span>SISOCC</span>
+        <span>PI-Bombeiro</span>
       </div>
 
       {/* Menu Items */}
@@ -62,7 +59,9 @@ const Sidebar: React.FC = () => {
         {menuItems.map((item) => (
           <div
             key={item.id}
-            className={`sidebar-item ${activeItem === item.id ? "active" : ""}`}
+            className={`sidebar-item ${
+              currentPath === item.path ? "active" : ""
+            }`}
             onClick={() => handleItemClick(item)}
           >
             <i className={item.icon}></i>

@@ -51,7 +51,7 @@ const Sidebar: React.FC = () => {
     <aside className="sidebar">
       <div className="sidebar-brand">
         <img src={SicogLogo} alt="Sicog Logo" className="brand-logo" />
-        <span>PI-Bombeiro</span>
+        <span>SISOCC</span>
       </div>
 
       {/* Menu Items */}

@@ -12,9 +12,23 @@ const DashboardContent: React.FC = () => {
   // Pega as 5 ocorrências mais recentes
   const recentOccurrences = occurrences.slice(0, 5);
 
-  const formatRelativeTime = (timestamp: Date) => {
+  // --- FUNÇÃO CORRIGIDA ---
+  const formatRelativeTime = (timestamp: any) => {
+    // 1. Se não existir timestamp, retorna um traço
+    if (!timestamp) return "-";
+
+    // 2. Garante que é um objeto Date
+    const dateObj = new Date(timestamp);
+
+    // 3. Verifica se a data é válida
+    if (isNaN(dateObj.getTime())) return "Data inválida";
+
     const now = new Date();
-    const diff = now.getTime() - timestamp.getTime();
+    const diff = now.getTime() - dateObj.getTime();
+    
+    // Evita tempos negativos se a data do servidor estiver um pouco à frente
+    if (diff < 0) return "Agora";
+
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
@@ -25,6 +39,7 @@ const DashboardContent: React.FC = () => {
     if (days === 1) return "Ontem";
     return `Há ${days} dias`;
   };
+  // ------------------------
 
   return (
     <div className="dashboard-main-content">

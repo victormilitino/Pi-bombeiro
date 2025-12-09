@@ -18,6 +18,7 @@ body {
   display: flex;
   min-height: 100vh;
   width: 100%;
+  position: relative; /* Necessário para o overlay funcionar bem */
 }
 
 .main-content {
@@ -26,8 +27,9 @@ body {
   flex-direction: column;
   min-height: 100vh;
   background: #f5f7fa;
-  margin-left: 280px;
+  margin-left: 280px; /* Espaço da sidebar fixa */
   width: calc(100% - 280px);
+  transition: margin-left 0.3s ease, width 0.3s ease;
 }
 
 /* ========== SCROLLBAR CUSTOMIZADA ========== */
@@ -61,9 +63,9 @@ body {
   position: fixed;
   left: 0;
   top: 0;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease;
   overflow-y: auto;
-  z-index: 1000;
+  z-index: 1000; /* Acima do Header, abaixo do Modal */
 }
 
 .sidebar-brand {
@@ -80,6 +82,12 @@ body {
 .sidebar-brand i {
   font-size: 1.3em;
   color: #4ecdc4;
+}
+
+.sidebar-brand .brand-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
 }
 
 .sidebar-nav {
@@ -179,8 +187,6 @@ body {
   color: #a0a3bd;
 }
 
-
-
 .logout-btn {
   width: 100%;
   display: flex;
@@ -208,6 +214,26 @@ body {
   font-size: 1.1em;
 }
 
+/* ========== SIDEBAR OVERLAY (MOBILE) ========== */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 999; /* Logo abaixo da sidebar (1000) mas acima do header (100) */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
 /* ========== HEADER STYLES ========== */
 .dashboard-header {
   display: flex;
@@ -222,6 +248,28 @@ body {
   z-index: 100;
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Botão Mobile do Header */
+.mobile-menu-btn {
+  display: none; /* Escondido no Desktop */
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  color: #1f2937;
+  cursor: pointer;
+  padding: 8px;
+  margin-right: 16px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.mobile-menu-btn:hover {
+  background-color: #f3f4f6;
+}
+
+.mobile-menu-btn:active {
+  background-color: #e5e7eb;
 }
 
 .header-search {
@@ -633,7 +681,7 @@ body {
   font-weight: 700;
 }
 
-/* Status Card - garantir que apareça corretamente */
+/* Status Card */
 .status-card {
   min-height: 280px;
   display: flex;
@@ -755,98 +803,6 @@ body {
 .date-cell {
   color: #9ca3af;
   font-size: 0.85em;
-}
-
-/* ========== RESPONSIVE ========== */
-@media (max-width: 1200px) {
-  .data-metrics-container {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 1024px) {
-  .sidebar {
-    width: 240px;
-  }
-  
-  .main-content {
-    margin-left: 240px;
-    width: calc(100% - 240px);
-  }
-}
-
-@media (max-width: 768px) {
-  .dashboard-header {
-    padding: 15px 20px;
-  }
-
-  .header-search {
-    max-width: 250px;
-  }
-
-  .header-user .user-info {
-    display: none;
-  }
-
-  .notification-dropdown,
-  .user-dropdown {
-    right: -20px;
-  }
-
-  .sidebar {
-    width: 80px;
-  }
-  
-  .main-content {
-    margin-left: 80px;
-    width: calc(100% - 80px);
-  }
-
-  .sidebar-brand span,
-  .sidebar-item span,
-  .sidebar-user .user-info,
-  .logout-btn span {
-    display: none;
-  }
-
-  .sidebar-brand {
-    justify-content: center;
-  }
-
-  .sidebar-item {
-    justify-content: center;
-  }
-
-  .logout-btn {
-    padding: 12px 0;
-  }
-
-  .dashboard-main-content {
-    padding: 20px;
-  }
-
-  .nav-cards-container {
-    grid-template-columns: 1fr;
-  }
-
-  .new-occurrence-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .status-values {
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .occurrences-table {
-    font-size: 0.85em;
-  }
-
-  .occurrences-table th,
-  .occurrences-table td {
-    padding: 10px 8px;
-  }
 }
 
 /* ========== MODAL STYLES ========== */
@@ -1038,7 +994,116 @@ body {
   color: #374151;
 }
 
+/* ========== RESPONSIVE & MOBILE MENU ========== */
+@media (max-width: 1200px) {
+  .data-metrics-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 240px;
+  }
+  
+  .main-content {
+    margin-left: 240px;
+    width: calc(100% - 240px);
+  }
+}
+
 @media (max-width: 768px) {
+  /* Layout Básico Mobile */
+  .dashboard-header {
+    padding: 15px 20px;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Botão Menu Hambúrguer Visível */
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Sidebar Comportamento Mobile */
+  .sidebar {
+    width: 260px; /* Largura fixa no mobile */
+    transform: translateX(-100%); /* Escondido por padrão */
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0); /* Visível quando tem classe .open */
+  }
+
+  /* Header Elementos */
+  .header-search {
+    max-width: 200px;
+  }
+
+  .header-user .user-info {
+    display: none;
+  }
+
+  .notification-dropdown,
+  .user-dropdown {
+    right: -20px;
+  }
+
+  /* Sidebar Interno Mobile */
+  .sidebar-brand span,
+  .sidebar-item span,
+  .sidebar-user .user-info,
+  .logout-btn span {
+    display: inline-block; /* Garante que apareçam no menu aberto */
+  }
+
+  .sidebar-brand {
+    justify-content: flex-start;
+  }
+
+  .sidebar-item {
+    justify-content: flex-start;
+  }
+
+  .logout-btn {
+    justify-content: center;
+  }
+
+  /* Conteúdo Principal */
+  .dashboard-main-content {
+    padding: 20px;
+  }
+
+  .nav-cards-container {
+    grid-template-columns: 1fr;
+  }
+
+  .new-occurrence-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .status-values {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .occurrences-table {
+    font-size: 0.85em;
+  }
+
+  .occurrences-table th,
+  .occurrences-table td {
+    padding: 10px 8px;
+  }
+
+  /* Modal Mobile */
   .modal-container {
     width: 95%;
     max-height: 95vh;
@@ -1071,114 +1136,14 @@ body {
   }
 }
 
-.sidebar-brand i {
-  font-size: 1.3em;
-  color: #4ecdc4;
-}
-
-
-.sidebar-brand .brand-logo {
-  width: 60px;
-  height: 60px;
-  object-fit: contain;
-}
-
-/* ========== ADICIONAR AO FINAL DO DASHBOARD.CSS ========== */
-
-/* ========== MOBILE MENU BUTTON ========== */
-.mobile-menu-btn {
-  display: none; /* Escondido por padrão */
-  background: none;
-  border: none;
-  font-size: 1.5em;
-  color: #1f2937;
-  cursor: pointer;
-  padding: 8px;
-  margin-right: 16px;
-  border-radius: 8px;
-  transition: background-color 0.2s ease;
-}
-
-.mobile-menu-btn:hover {
-  background-color: #f3f4f6;
-}
-
-.mobile-menu-btn:active {
-  background-color: #e5e7eb;
-}
-
-/* ========== SIDEBAR OVERLAY (MOBILE) ========== */
-.sidebar-overlay {
-  display: none; /* Escondido por padrão */
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  z-index: 999;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.sidebar-overlay.active {
-  display: block;
-  opacity: 1;
-}
-
-/* ========== COMPORTAMENTO DA SIDEBAR EM MOBILE ========== */
-@media (max-width: 768px) {
-  /* Mostra o botão de menu mobile */
-  .mobile-menu-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Sidebar escondida por padrão no mobile */
-  .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-  }
-
-  /* Sidebar aberta no mobile */
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  /* Remove margin-left do main-content no mobile */
-  .main-content {
-    margin-left: 0 !important;
-    width: 100% !important;
-  }
-
-  /* Header ajustes para mobile */
-  .dashboard-header {
-    padding: 15px 20px;
-  }
-
-  .header-search {
-    max-width: 200px;
-  }
-
-  /* Esconde user info no mobile */
-  .header-user .user-info {
-    display: none;
-  }
-}
-
 /* ========== MELHORIAS DE ACESSIBILIDADE ========== */
 @media (prefers-reduced-motion: reduce) {
   .sidebar,
-  .sidebar-overlay {
+  .sidebar-overlay,
+  .nav-card,
+  .modal-container,
+  .btn-primary {
     transition: none;
+    animation: none;
   }
 }
-
-/* ========== Z-INDEX HIERARQUIA ========== */
-/* 
-  999 = sidebar-overlay
-  1000 = sidebar
-  100 = header
-*/

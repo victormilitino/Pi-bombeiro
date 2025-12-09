@@ -2,28 +2,27 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Dashboard.css";
 
-const Header: React.FC = () => {
+// Adicionamos a interface para aceitar o toggle do Layout
+interface HeaderProps {
+  onToggleSidebar?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("isAuthenticated");
     navigate("/");
   };
 
-  const notifications = [
-    { id: 1, text: "Nova ocorrência registrada", time: "Há 5 min", unread: true },
-    { id: 2, text: "Relatório mensal disponível", time: "Há 1 hora", unread: true },
-    { id: 3, text: "Manutenção agendada", time: "Há 3 horas", unread: false },
-  ];
-
-  const unreadCount = notifications.filter(n => n.unread).length;
-
   return (
     <header className="dashboard-header">
+      {/* Botão Mobile (Só aparece em telas pequenas via CSS) */}
+      <div className="mobile-menu-btn" onClick={onToggleSidebar}>
+        <i className="fas fa-bars"></i>
+      </div>
 
-      
       {/* Search Bar */}
       <div className="header-search">
         <i className="fas fa-search"></i>
@@ -33,55 +32,8 @@ const Header: React.FC = () => {
         />
       </div>
 
-      {/* Right Section: Notifications + User */}
+      {/* Right Section: User */}
       <div className="header-actions">
-        {/* Notifications */}
-        <div className="header-notification-wrapper">
-          <button 
-            className="header-icon-btn"
-            onClick={() => setShowNotifications(!showNotifications)}
-          >
-            <i className="fas fa-bell"></i>
-            {unreadCount > 0 && (
-              <span className="notification-badge">{unreadCount}</span>
-            )}
-          </button>
-
-          {showNotifications && (
-            <div className="notification-dropdown">
-              <div className="notification-header">
-                <h4>Notificações</h4>
-                <span className="mark-all-read">Marcar todas como lidas</span>
-              </div>
-              <div className="notification-list">
-                {notifications.map((notif) => (
-                  <div 
-                    key={notif.id} 
-                    className={`notification-item ${notif.unread ? 'unread' : ''}`}
-                  >
-                    <div className="notification-icon">
-                      <i className="fas fa-info-circle"></i>
-                    </div>
-                    <div className="notification-content">
-                      <p>{notif.text}</p>
-                      <span className="notification-time">{notif.time}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="notification-footer">
-                <a href="#">Ver todas as notificações</a>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Quick Actions */}
-        <button className="header-icon-btn">
-          <i className="fas fa-th"></i>
-        </button>
-
-        {/* User Profile */}
         <div className="header-user-wrapper">
           <div 
             className="header-user"
@@ -106,10 +58,6 @@ const Header: React.FC = () => {
               <div className="dropdown-item">
                 <i className="fas fa-cog"></i>
                 <span>Configurações</span>
-              </div>
-              <div className="dropdown-item">
-                <i className="fas fa-question-circle"></i>
-                <span>Ajuda</span>
               </div>
               <div className="dropdown-divider"></div>
               <div className="dropdown-item logout" onClick={handleLogout}>

@@ -1,14 +1,13 @@
-import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, Outlet } from "react-router-dom"; 
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import DashboardContent from "./DashboardContent";
 import "../styles/Dashboard.css";
 
 const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Lógica de proteção de rota (sem PrivateRoute)
   useEffect(() => {
     const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
     if (!isAuthenticated) {
@@ -16,13 +15,25 @@ const DashboardLayout: React.FC = () => {
     }
   }, [navigate]);
 
-  // O layout principal
   return (
     <div className="dashboard-container">
-      <Sidebar />
+      {/* Overlay para fechar menu no mobile */}
+      <div 
+        className={`sidebar-overlay ${isSidebarOpen ? "active" : ""}`} 
+        onClick={() => setIsSidebarOpen(false)} 
+      />
+
+      {/* PASSAMOS o estado como prop, em vez de envolver em outra div */}
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+      />
+
       <div className="main-content">
-        <Header />
-        <DashboardContent />
+        <Header onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+        
+        {/* Renderiza as páginas internas limpas */}
+        <Outlet /> 
       </div>
     </div>
   );

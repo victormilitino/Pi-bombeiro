@@ -3,7 +3,13 @@ import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/Dashboard.css";
 import SicogLogo from "../assets/SicogLogo.png";
 
-const Sidebar: React.FC = () => {
+// Nova interface para aceitar o estado do menu mobile
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void; // Para fechar ao clicar em um item no mobile
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
@@ -43,18 +49,21 @@ const Sidebar: React.FC = () => {
   ];
 
   const handleItemClick = (item: any) => {
-
     navigate(item.path);
+    // Fecha a sidebar se estiver no mobile ao clicar em um item
+    if (window.innerWidth <= 768) {
+      onClose();
+    }
   };
 
   return (
-    <aside className="sidebar">
+    // Aplicamos a classe 'open' diretamente aqui, baseada na prop
+    <aside className={`sidebar ${isOpen ? "open" : ""}`}>
       <div className="sidebar-brand">
         <img src={SicogLogo} alt="Sicog Logo" className="brand-logo" />
         <span>SISOCC</span>
       </div>
 
-      {/* Menu Items */}
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
           <div
@@ -70,7 +79,6 @@ const Sidebar: React.FC = () => {
         ))}
       </nav>
 
-      {/* User Profile Section */}
       <div className="sidebar-footer">
         <div className="sidebar-user">
           <div className="user-avatar">

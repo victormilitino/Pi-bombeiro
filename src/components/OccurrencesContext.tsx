@@ -1,107 +1,88 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import api from '../services/api';
+import { connectSocket, disconnectSocket } from '../services/socket';
 
+// Interface igualzinha à que o Backend devolve
 export interface Occurrence {
-  id: number;
+  timestamp(timestamp: any): React.ReactNode;
+  id: string; // Backend usa UUID (string)
   tipo: string;
   local: string;
-  status: "Novo" | "Em Análise" | "Concluído";
-  data: string;
-  timestamp: Date;
-  descricao?: string;
-  responsavel?: string;
+  endereco: string;
+  latitude: number;
+  longitude: number;
+  status: 'NOVO' | 'EM_ANALISE' | 'EM_ATENDIMENTO' | 'CONCLUIDO';
+  prioridade: string;
+  dataOcorrencia: string; // Vem como string ISO do JSON
+  fotos: string[];
 }
 
-interface OccurrencesContextType {
+interface OccurrencesContextData {
   occurrences: Occurrence[];
-  addOccurrence: (occurrence: Omit<Occurrence, "id" | "timestamp">) => void;
-  updateOccurrence: (id: number, updates: Partial<Occurrence>) => void;
-  deleteOccurrence: (id: number) => void;
-  getStats: () => { total: number; pendentes: number; resolvidos: number };
+  loading: boolean;
+  getStats: () => { pendentes: number; resolvidos: number; total: number };
+  refreshData: () => Promise<void>;
 }
 
-const OccurrencesContext = createContext<OccurrencesContextType | undefined>(undefined);
-
-const INITIAL_DATA: Occurrence[] = [
-  {
-    id: 1,
-    tipo: "Risco",
-    local: "Rua A",
-    status: "Novo",
-    data: "Há 5 min",
-    timestamp: new Date(Date.now() - 5 * 60 * 1000),
-    descricao: "Risco de desabamento",
-  },
-  {
-    id: 2,
-    tipo: "Alagamento",
-    local: "Av. Principal",
-    status: "Em Análise",
-    data: "Há 2 horas",
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    descricao: "Alagamento na via principal",
-  },
-  {
-    id: 3,
-    tipo: "Trânsito",
-    local: "Ponte C",
-    status: "Concluído",
-    data: "Ontem",
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    descricao: "Acidente de trânsito",
-  },
-];
+const OccurrencesContext = createContext<OccurrencesContextData>({} as OccurrencesContextData);
 
 export const OccurrencesProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [occurrences, setOccurrences] = useState<Occurrence[]>(INITIAL_DATA);
+  const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const addOccurrence = (occurrence: Omit<Occurrence, "id" | "timestamp">) => {
-    const newOccurrence: Occurrence = {
-      ...occurrence,
-      id: Date.now(),
-      timestamp: new Date(),
+  // 1. Função que busca a lista inicial do banco
+  const fetchOccurrences = async () => {
+    try {
+      const response = await api.get('/occurrences');
+      // O backend retorna: { success: true, data: [...] }
+      setOccurrences(response.data.data);
+    } catch (error) {
+      console.error('Erro ao buscar ocorrências:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Carrega dados ao abrir a tela
+    fetchOccurrences();
+
+    // 2. Conecta no WebSocket para ouvir novidades
+    const socket = connectSocket();
+
+    // Ouve quando uma nova ocorrência é criada
+    socket.on('occurrence:new', (newOcc: Occurrence) => {
+      console.log('🔔 Nova ocorrência recebida via Socket:', newOcc);
+      setOccurrences((prev) => [newOcc, ...prev]);
+    });
+
+    // Ouve quando um status muda
+    socket.on('occurrence:update', (updatedOcc: Occurrence) => {
+      console.log('🔄 Ocorrência atualizada:', updatedOcc);
+      setOccurrences((prev) =>
+        prev.map((occ) => (occ.id === updatedOcc.id ? updatedOcc : occ))
+      );
+    });
+
+    // Limpeza ao sair
+    return () => {
+      socket.off('occurrence:new');
+      socket.off('occurrence:update');
+      disconnectSocket();
     };
-    setOccurrences((prev) => [newOccurrence, ...prev]);
-  };
-
-  const updateOccurrence = (id: number, updates: Partial<Occurrence>) => {
-    setOccurrences((prev) =>
-      prev.map((occ) => (occ.id === id ? { ...occ, ...updates } : occ))
-    );
-  };
-
-  const deleteOccurrence = (id: number) => {
-    setOccurrences((prev) => prev.filter((occ) => occ.id !== id));
-  };
+  }, []);
 
   const getStats = () => {
-    const total = occurrences.length;
-    const pendentes = occurrences.filter(
-      (occ) => occ.status === "Novo" || occ.status === "Em Análise"
-    ).length;
-    const resolvidos = occurrences.filter((occ) => occ.status === "Concluído").length;
-
-    return { total, pendentes, resolvidos };
+    const pendentes = occurrences.filter(o => o.status !== 'CONCLUIDO').length;
+    const resolvidos = occurrences.filter(o => o.status === 'CONCLUIDO').length;
+    return { pendentes, resolvidos, total: occurrences.length };
   };
 
   return (
-    <OccurrencesContext.Provider
-      value={{
-        occurrences,
-        addOccurrence,
-        updateOccurrence,
-        deleteOccurrence,
-        getStats,
-      }}
-    >
+    <OccurrencesContext.Provider value={{ occurrences, loading, getStats, refreshData: fetchOccurrences }}>
       {children}
     </OccurrencesContext.Provider>
   );
 };
 
-export const useOccurrences = () => {
-  const context = useContext(OccurrencesContext);
-  if (!context) {
-    throw new Error("useOccurrences must be used within OccurrencesProvider");
-  }
-  return context;
-};
+export const useOccurrences = () => useContext(OccurrencesContext);

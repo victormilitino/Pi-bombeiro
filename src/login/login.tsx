@@ -1,103 +1,110 @@
 import React, { useState } from "react";
-// Importa o hook para navegação
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
+import api from "../services/api"; // <--- Importando a API que configuramos
 import './login.css';
 import logo from "../assets/SicogLogo.png";
 
-// ===============================================
-// 1. DADOS DE CONTA SIMULADOS (Em Memória)
-// Você substituiria isso por uma chamada a API real
-// ===============================================
-const USERS: Record<string, string> = {
-    admin: "senha123", // Usuário e Senha de exemplo
-    saulo: "sisocc2025", // Outro usuário de exemplo
-    victor: "123456", // Outro usuário de exemplo
-};
-
-// Componente de Login
 const Login: React.FC = () => {
-    // chama o hook useNavigate dentro do componente para obter 'navigate'
     const navigate = useNavigate();
 
-    // 2. Estados para armazenar os valores dos inputs
-    const [usuario, setUsuario] = useState<string>('');
+    // Estados
+    const [usuario, setUsuario] = useState<string>(''); // Aqui o usuário vai digitar o EMAIL
     const [senha, setSenha] = useState<string>('');
     const [erro, setErro] = useState<string>('');
     const [mostrarSenha, setMostrarSenha] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(false); // Novo estado de carregamento
 
     // ===============================================
-    // 3. Lógica de Login
+    // Lógica de Login Real (Integrada)
     // ===============================================
-    const handleLogin = (e: React.FormEvent) => {
-        e.preventDefault(); // Impede o recarregamento da página
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErro('');
+        setLoading(true); // Bloqueia o botão
 
-        setErro(''); // Limpa mensagens de erro anteriores
+        try {
+            // 1. Chama o Backend
+            // O backend espera { email, senha }, mas seu estado chama 'usuario'
+            const response = await api.post('/auth/login', { 
+                email: usuario, 
+                senha: senha 
+            });
 
-        // Verifica se o usuário existe e se a senha está correta
-        if (USERS[usuario] && USERS[usuario] === senha) {
-            
-            // 4. Salva a sessão no Local Storage (Persistência)
-            // Salvar 'true' ou o nome do usuário/token é a prática comum
+            // 2. Se deu certo (200 OK), pega os dados
+            const { token, user } = response.data.data;
+
+            // 3. Salva o Token (Fundamental para as próximas requisições)
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
             localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('currentUser', usuario);
 
-            // 5. Redireciona para a rota do Dashboard
+            console.log("Login realizado:", user.nome);
+
+            // 4. Redireciona para o Dashboard
             navigate('/dashboard'); 
-            
-        } else {
-            // Se o login falhar
-            setErro('Usuário ou senha inválidos. Tente novamente.');
+
+        } catch (err: any) {
+            console.error(err);
+            // Pega a mensagem de erro do backend ou define uma padrão
+            const mensagem = err.response?.data?.message || 'Falha ao conectar com o servidor.';
+            setErro(mensagem);
+        } finally {
+            setLoading(false); // Libera o botão
         }
     };
     
-    // ===============================================
-    // 6. Lógica de Alternar a Senha (Funcionalidade de Visão)
-    // ===============================================
     const toggleMostrarSenha = () => {
         setMostrarSenha(prev => !prev);
     };
 
     return (
-        // Envolve o formulário com o evento onSubmit
         <div className="container">
-            {/* Lado esquerdo: formulário */}
-            {/* O evento de submit agora é no formulário (ou na div, se preferir) */}
             <div className="formContainer">
                 <h1 className="title">Login</h1>
-                <p className="subtitle">Insira os detalhes da sua conta</p>
+                <p className="subtitle">Insira suas credenciais de acesso</p>
                 
-                {/* Exibir erro, se houver */}
-                {erro && <p style={{ color: 'red', marginBottom: '10px' }}>{erro}</p>}
+                {/* Exibir erro vindo da API */}
+                {erro && (
+                    <div style={{ 
+                        backgroundColor: '#ffebee', 
+                        color: '#c62828', 
+                        padding: '10px', 
+                        borderRadius: '4px', 
+                        marginBottom: '20px',
+                        fontSize: '14px'
+                    }}>
+                        {erro}
+                    </div>
+                )}
 
-                <label htmlFor="usuario">Usuário</label>
+                <label htmlFor="usuario">E-mail</label>
                 <input
-                    type="text"
+                    type="email" // Mudei para email para ajudar na validação do browser
                     id="usuario"
                     className="input"
-                    placeholder="Usuário"
-                    // Liga o input ao estado 'usuario'
+                    placeholder="ex: admin@bombeiros.pe.gov.br"
                     value={usuario} 
                     onChange={(e) => setUsuario(e.target.value)}
+                    disabled={loading}
                 />
 
                 <label htmlFor="senha">Senha</label>
                 <div className="passwordContainer">
                     <input
-                        // Altera o tipo do input baseado no estado 'mostrarSenha'
                         type={mostrarSenha ? "text" : "password"} 
                         id="senha"
                         className="inputPassword"
                         placeholder="Senha"
-                        // Liga o input ao estado 'senha'
                         value={senha}
                         onChange={(e) => setSenha(e.target.value)}
+                        disabled={loading}
                     />
                     
-                    {/* Botão de alternar a visibilidade da senha */}
                     <button 
-                        type="button" // Evita que o botão submeta o formulário
+                        type="button" 
                         className="iconEye" 
                         onClick={toggleMostrarSenha}
+                        tabIndex={-1} // Evita foco ao dar Tab
                     >
                         <span role="img" aria-label="eye">{mostrarSenha ? "🙈" : "👁️"}</span>
                     </button>
@@ -109,13 +116,14 @@ const Login: React.FC = () => {
 
                 <button 
                     className="loginButton"
-                    onClick={handleLogin} // Chama a função de login
+                    onClick={handleLogin}
+                    disabled={loading} // Desabilita enquanto carrega
+                    style={{ opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
                 >
-                    Login
+                    {loading ? 'Entrando...' : 'Login'}
                 </button>
             </div>
 
-            {/* Lado direito: logo */}
             <div className="logoContainer">
                 <img src={logo} alt="Logo" className="logo" />
             </div>
@@ -124,4 +132,3 @@ const Login: React.FC = () => {
 };
 
 export default Login;
-

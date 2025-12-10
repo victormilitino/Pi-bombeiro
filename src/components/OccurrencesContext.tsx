@@ -1,145 +1,126 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import api from '../services/api';
-import { connectSocket, disconnectSocket } from '../services/socket';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import occurrencesAPI from "../services/api";
 
 export interface Occurrence {
   id: string;
   tipo: string;
   local: string;
   endereco: string;
+  status: "NOVO" | "EM_ANALISE" | "EM_ATENDIMENTO" | "CONCLUIDO" | "CANCELADO";
+  prioridade: string;
+  data: string;
+  timestamp: Date;
+  descricao?: string;
+  responsavel?: string;
   latitude: number;
   longitude: number;
-  status: 'NOVO' | 'EM_ANALISE' | 'EM_ATENDIMENTO' | 'CONCLUIDO';
-  prioridade: string;
-  dataOcorrencia: string; // Vem do backend
-  timestamp: Date; // Usado pelo front (calculado)
-  fotos: string[];
 }
 
-interface OccurrencesContextData {
+interface OccurrencesContextType {
   occurrences: Occurrence[];
   loading: boolean;
-  getStats: () => { pendentes: number; resolvidos: number; total: number };
-  refreshData: () => Promise<void>;
-  addOccurrence: (data: any) => Promise<void>;
-  updateOccurrence: (id: any, data: any) => Promise<void>;
-  deleteOccurrence: (id: any) => Promise<void>;
+  addOccurrence: (occurrence: any) => Promise<void>;
+  updateOccurrence: (id: string, updates: any) => Promise<void>;
+  deleteOccurrence: (id: string) => Promise<void>;
+  refreshOccurrences: () => Promise<void>;
+  getStats: () => { total: number; pendentes: number; resolvidos: number };
 }
 
-const OccurrencesContext = createContext<OccurrencesContextData>({} as OccurrencesContextData);
+const OccurrencesContext = createContext<OccurrencesContextType | undefined>(
+  undefined
+);
 
-export const OccurrencesProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const OccurrencesProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const fetchOccurrences = async () => {
+  const refreshOccurrences = async () => {
     try {
-      const response = await api.get('/occurrences');
-      const rawData = response.data.data || [];
-
-      // Mapeia os dados garantindo que lat/lng sejam números e criando o timestamp
-      const formattedData = rawData.map((occ: any) => ({
-        ...occ,
-        latitude: Number(occ.latitude),
-        longitude: Number(occ.longitude),
-        // O Dashboard precisa de um objeto Date no campo timestamp
-        timestamp: occ.dataOcorrencia ? new Date(occ.dataOcorrencia) : new Date(),
-      }));
-
-      console.log("Dados carregados do Backend:", formattedData.length, "ocorrências");
-      setOccurrences(formattedData);
+      setLoading(true);
+      const response: any = (await occurrencesAPI.get("/occurrences")).data;
+      if (response.success) {
+        const formatted = response.data.map((occ: any) => ({
+          ...occ,
+          data: new Date(occ.createdAt).toLocaleString("pt-BR"),
+          timestamp: new Date(occ.createdAt),
+        }));
+        setOccurrences(formatted);
+      }
     } catch (error) {
-      console.error('Erro ao buscar ocorrências:', error);
+      console.error("Erro ao carregar ocorrências:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const addOccurrence = async (data: any) => {
-    try {
-      // Envia para o backend (o backend agora geocodifica sozinho)
-      await api.post('/occurrences', data);
-      // Não precisamos adicionar manualmente no state pois o Socket.io vai avisar
-    } catch (error) {
-      console.error("Erro ao adicionar:", error);
-      alert("Erro ao salvar ocorrência. Verifique o console.");
-    }
-  };
-
-  const updateOccurrence = async (id: any, data: any) => {
-    try {
-      await api.put(`/occurrences/${id}`, data);
-    } catch (error) {
-      console.error("Erro ao atualizar:", error);
-    }
-  };
-
-  const deleteOccurrence = async (id: any) => {
-    try {
-      await api.delete(`/occurrences/${id}`);
-    } catch (error) {
-      console.error("Erro ao excluir:", error);
-    }
-  };
-
   useEffect(() => {
-    fetchOccurrences();
-
-    const socket = connectSocket();
-
-    socket.on('occurrence:new', (newOcc: any) => {
-      console.log('🔔 Nova ocorrência via Socket:', newOcc);
-      const safeOcc = { 
-        ...newOcc, 
-        latitude: Number(newOcc.latitude),
-        longitude: Number(newOcc.longitude),
-        timestamp: newOcc.dataOcorrencia ? new Date(newOcc.dataOcorrencia) : new Date() 
-      };
-      setOccurrences((prev) => [safeOcc, ...prev]);
-    });
-
-    socket.on('occurrence:update', (updatedOcc: any) => {
-      setOccurrences((prev) =>
-        prev.map((occ) => {
-          if (occ.id === updatedOcc.id) {
-            return {
-              ...updatedOcc,
-              latitude: Number(updatedOcc.latitude),
-              longitude: Number(updatedOcc.longitude),
-              timestamp: updatedOcc.dataOcorrencia ? new Date(updatedOcc.dataOcorrencia) : new Date()
-            };
-          }
-          return occ;
-        })
-      );
-    });
-
-    return () => {
-      socket.off('occurrence:new');
-      socket.off('occurrence:update');
-      disconnectSocket();
-    };
+    const token = localStorage.getItem("token");
+    if (token) {
+      refreshOccurrences();
+    }
   }, []);
 
+  const addOccurrence = async (occurrenceData: any) => {
+    const response: any = (await occurrencesAPI.post("/occurrences", occurrenceData)).data;
+    if (response.success) {
+      await refreshOccurrences();
+    }
+  };
+
+  const updateOccurrence = async (id: string, updates: any) => {
+    const response: any = (await occurrencesAPI.put(`/occurrences/${id}`, updates)).data;
+    if (response.success) {
+      await refreshOccurrences();
+    }
+  };
+
+  const deleteOccurrence = async (id: string) => {
+    const response: any = (await occurrencesAPI.delete(`/occurrences/${id}`)).data;
+    if (response.success) {
+      await refreshOccurrences();
+    }
+  };
+
   const getStats = () => {
-    const pendentes = occurrences.filter(o => o.status !== 'CONCLUIDO').length;
-    const resolvidos = occurrences.filter(o => o.status === 'CONCLUIDO').length;
-    return { pendentes, resolvidos, total: occurrences.length };
+    const total = occurrences.length;
+    const pendentes = occurrences.filter(
+      (occ) => occ.status === "NOVO" || occ.status === "EM_ANALISE"
+    ).length;
+    const resolvidos = occurrences.filter(
+      (occ) => occ.status === "CONCLUIDO"
+    ).length;
+    return { total, pendentes, resolvidos };
   };
 
   return (
-    <OccurrencesContext.Provider value={{ 
-      occurrences, 
-      loading, 
-      getStats, 
-      refreshData: fetchOccurrences,
-      addOccurrence,
-      updateOccurrence,
-      deleteOccurrence
-    }}>
+    <OccurrencesContext.Provider
+      value={{
+        occurrences,
+        loading,
+        addOccurrence,
+        updateOccurrence,
+        deleteOccurrence,
+        refreshOccurrences,
+        getStats,
+      }}
+    >
       {children}
     </OccurrencesContext.Provider>
   );
 };
 
-export const useOccurrences = () => useContext(OccurrencesContext);
+export const useOccurrences = () => {
+  const context = useContext(OccurrencesContext);
+  if (!context) {
+    throw new Error("useOccurrences must be used within OccurrencesProvider");
+  }
+  return context;
+};

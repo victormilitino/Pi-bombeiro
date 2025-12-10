@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useOccurrences } from "../components/OccurrencesContext";
-import { geocodeAddress } from "../utils/mapUtils"; // Usa a função centralizada
 import "../styles/Dashboard.css";
 
 interface AddOccurrenceModalProps {
@@ -13,63 +12,79 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
   onClose,
 }) => {
   const { addOccurrence } = useOccurrences();
-  const [isSearching, setIsSearching] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState("");
 
   const [formData, setFormData] = useState({
     tipo: "",
     local: "",
-    status: "Novo" as "Novo" | "Em Análise" | "Concluído",
+    endereco: "",
+    bairro: "",
+    cidade: "Recife",
+    estado: "PE",
     descricao: "",
-    responsavel: "",
+    prioridade: "MEDIA",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErro("");
 
-    if (!formData.tipo || !formData.local) {
-      alert("Por favor, preencha os campos obrigatórios!");
+    // Validação dos campos obrigatórios
+    if (!formData.tipo || !formData.local || !formData.endereco) {
+      setErro("Por favor, preencha os campos obrigatórios (Tipo, Local e Endereço)!");
       return;
     }
 
-    setIsSearching(true);
+    setLoading(true);
+    try {
+      // Monta o endereço completo para o geocoding
+      const enderecoCompleto = [
+        formData.endereco,
+        formData.bairro,
+        formData.cidade,
+        formData.estado
+      ].filter(Boolean).join(", ");
 
-    // 1. Busca coordenadas reais
-    const coords = await geocodeAddress(formData.local);
+      // NÃO envia latitude/longitude - deixa o backend fazer o geocoding!
+      await addOccurrence({
+        tipo: formData.tipo,
+        local: formData.local,
+        endereco: enderecoCompleto,
+        descricao: formData.descricao,
+        prioridade: formData.prioridade,
+      });
 
-    // 2. Se falhar, usa padrão (Centro Recife) e avisa
-    const finalLat = coords ? coords.lat : -8.0476;
-    const finalLng = coords ? coords.lng : -34.8770;
+      // Reset form
+      setFormData({
+        tipo: "",
+        local: "",
+        endereco: "",
+        bairro: "",
+        cidade: "Recife",
+        estado: "PE",
+        descricao: "",
+        prioridade: "MEDIA",
+      });
 
-    if (!coords) {
-      alert("Endereço não encontrado com precisão. Salvando no centro de Recife.");
+      onClose();
+    } catch (error: any) {
+      console.error("Erro ao criar ocorrência:", error);
+      setErro(error.response?.data?.message || error.message || "Erro ao criar ocorrência. Verifique o endereço.");
+    } finally {
+      setLoading(false);
     }
-
-    // 3. Salva
-    addOccurrence({
-      ...formData,
-      latitude: finalLat,
-      longitude: finalLng,
-      data: "Agora",
-    });
-
-    setIsSearching(false);
-
-    // Reset
-    setFormData({
-      tipo: "",
-      local: "",
-      status: "Novo",
-      descricao: "",
-      responsavel: "",
-    });
-
-    onClose();
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
   if (!isOpen) return null;
@@ -88,50 +103,151 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
+          {erro && (
+            <div style={{ 
+              color: "#dc2626", 
+              background: "#fef2f2", 
+              padding: "12px", 
+              borderRadius: "8px", 
+              marginBottom: "16px",
+              border: "1px solid #fecaca"
+            }}>
+              <i className="fas fa-exclamation-circle" style={{ marginRight: "8px" }}></i>
+              {erro}
+            </div>
+          )}
+
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="tipo">Tipo <span className="required">*</span></label>
-              <select id="tipo" name="tipo" value={formData.tipo} onChange={handleChange} required>
+              <label htmlFor="tipo">
+                Tipo de Ocorrência <span className="required">*</span>
+              </label>
+              <select
+                id="tipo"
+                name="tipo"
+                value={formData.tipo}
+                onChange={handleChange}
+                required
+              >
                 <option value="">Selecione...</option>
-                <option value="Risco">Risco</option>
-                <option value="Alagamento">Alagamento</option>
-                <option value="Trânsito">Trânsito</option>
-                <option value="Incêndio">Incêndio</option>
-                <option value="Queda de Árvore">Queda de Árvore</option>
-                <option value="Acidente">Acidente</option>
-                <option value="Outros">Outros</option>
+                <option value="RISCO">Risco</option>
+                <option value="ALAGAMENTO">Alagamento</option>
+                <option value="TRANSITO">Trânsito</option>
+                <option value="INCENDIO">Incêndio</option>
+                <option value="QUEDA_ARVORE">Queda de Árvore</option>
+                <option value="ACIDENTE">Acidente</option>
+                <option value="RESGATE">Resgate</option>
+                <option value="VAZAMENTO">Vazamento</option>
+                <option value="OUTROS">Outros</option>
               </select>
             </div>
+
             <div className="form-group">
-              <label htmlFor="status">Status</label>
-              <select id="status" name="status" value={formData.status} onChange={handleChange}>
-                <option value="Novo">Novo</option>
-                <option value="Em Análise">Em Análise</option>
-                <option value="Concluído">Concluído</option>
+              <label htmlFor="prioridade">Prioridade</label>
+              <select
+                id="prioridade"
+                name="prioridade"
+                value={formData.prioridade}
+                onChange={handleChange}
+              >
+                <option value="BAIXA">Baixa</option>
+                <option value="MEDIA">Média</option>
+                <option value="ALTA">Alta</option>
+                <option value="CRITICA">Crítica</option>
               </select>
             </div>
           </div>
 
           <div className="form-group">
-            <label htmlFor="local">Local <span className="required">*</span></label>
-            <input type="text" id="local" name="local" value={formData.local} onChange={handleChange} placeholder="Ex: Av. Boa Viagem, 1500" required />
+            <label htmlFor="local">
+              Local / Referência <span className="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="local"
+              name="local"
+              value={formData.local}
+              onChange={handleChange}
+              placeholder="Ex: Praça do Derby, próximo ao semáforo"
+              required
+            />
+            <small style={{ color: "#6b7280", fontSize: "0.8em" }}>
+              Nome do local ou ponto de referência
+            </small>
           </div>
 
           <div className="form-group">
-            <label htmlFor="responsavel">Responsável</label>
-            <input type="text" id="responsavel" name="responsavel" value={formData.responsavel} onChange={handleChange} placeholder="Nome do responsável" />
+            <label htmlFor="endereco">
+              Endereço Completo <span className="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="endereco"
+              name="endereco"
+              value={formData.endereco}
+              onChange={handleChange}
+              placeholder="Ex: Rua do Pombal, 57"
+              required
+            />
+            <small style={{ color: "#6b7280", fontSize: "0.8em" }}>
+              Rua e número para localização no mapa
+            </small>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="bairro">Bairro</label>
+              <input
+                type="text"
+                id="bairro"
+                name="bairro"
+                value={formData.bairro}
+                onChange={handleChange}
+                placeholder="Ex: Santo Amaro"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="cidade">Cidade</label>
+              <input
+                type="text"
+                id="cidade"
+                name="cidade"
+                value={formData.cidade}
+                onChange={handleChange}
+                placeholder="Recife"
+              />
+            </div>
           </div>
 
           <div className="form-group">
             <label htmlFor="descricao">Descrição</label>
-            <textarea id="descricao" name="descricao" value={formData.descricao} onChange={handleChange} placeholder="Detalhes..." rows={4} />
+            <textarea
+              id="descricao"
+              name="descricao"
+              value={formData.descricao}
+              onChange={handleChange}
+              placeholder="Descreva os detalhes da ocorrência..."
+              rows={4}
+            />
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={isSearching}>Cancelar</button>
-            <button type="submit" className="btn-primary" disabled={isSearching}>
-              <i className={isSearching ? "fas fa-spinner fa-spin" : "fas fa-save"}></i>
-              {isSearching ? " Buscando..." : " Registrar"}
+            <button type="button" className="btn-secondary" onClick={onClose}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? (
+                <>
+                  <i className="fas fa-spinner fa-spin"></i>
+                  Localizando endereço...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-save"></i>
+                  Registrar Ocorrência
+                </>
+              )}
             </button>
           </div>
         </form>

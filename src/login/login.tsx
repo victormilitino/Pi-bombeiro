@@ -7,64 +7,54 @@ import logo from "../assets/SicogLogo.png";
 const Login: React.FC = () => {
     const navigate = useNavigate();
 
-    // Estados
+
     const [usuario, setUsuario] = useState<string>('');
     const [senha, setSenha] = useState<string>('');
     const [erro, setErro] = useState<string>('');
     const [mostrarSenha, setMostrarSenha] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
 
-    // ===============================================
-    // Credenciais de Fallback (Modo Offline)
-    // ===============================================
+
     const FALLBACK_LOGIN = 'victor';
     const FALLBACK_SENHA = '123456';
 
-    // ===============================================
-    // Lógica de Login (com Fallback)
-    // ===============================================
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setErro('');
         setLoading(true);
 
         try {
-            // 1. Tenta autenticar no Backend
+
             const response = await api.post('/auth/login', { 
                 email: usuario, 
                 senha: senha
             });
 
-            // 2. Se deu certo, pega os dados
+
             const { token, user } = response.data.data;
 
-            // 3. Salva o Token
+
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
             localStorage.setItem('isAuthenticated', 'true');
 
             console.log("Login realizado (servidor):", user.nome);
 
-            // 4. Redireciona para o Dashboard
             navigate('/dashboard'); 
 
         } catch (err: any) {
             console.error("Erro ao conectar com servidor:", err);
 
-            // ===============================================
-            // FALLBACK: Se o servidor não responder,
-            // tenta login offline com credenciais fixas
-            // ===============================================
-            
-            // Verifica se é erro de rede (servidor offline)
+
             const isNetworkError = !err.response || err.code === 'ERR_NETWORK';
             
             if (isNetworkError) {
                 console.log("Servidor offline. Tentando login local...");
                 
-                // Valida credenciais locais
+
                 if (usuario === FALLBACK_LOGIN && senha === FALLBACK_SENHA) {
-                    // Cria dados fictícios do usuário
+
                     const userLocal = {
                         id: 999,
                         nome: 'Victor',
@@ -72,7 +62,6 @@ const Login: React.FC = () => {
                         role: 'admin'
                     };
 
-                    // Salva no localStorage (sem token, modo offline)
                     localStorage.setItem('token', 'offline-mode');
                     localStorage.setItem('user', JSON.stringify(userLocal));
                     localStorage.setItem('isAuthenticated', 'true');
@@ -84,7 +73,7 @@ const Login: React.FC = () => {
                     setErro('Servidor offline. Use login: victor / senha: 123456');
                 }
             } else {
-                // Erro de autenticação do servidor (credenciais inválidas)
+
                 const mensagem = err.response?.data?.message || 'Credenciais inválidas.';
                 setErro(mensagem);
             }
@@ -103,7 +92,6 @@ const Login: React.FC = () => {
                 <h1 className="title">Login</h1>
                 <p className="subtitle">Insira suas credenciais de acesso</p>
                 
-                {/* Exibir erro */}
                 {erro && (
                     <div style={{ 
                         backgroundColor: '#ffebee', 
@@ -163,7 +151,6 @@ const Login: React.FC = () => {
                     {loading ? 'Entrando...' : 'Login'}
                 </button>
 
-                {/* Dica de login offline (opcional) */}
                 <p style={{ 
                     marginTop: '15px', 
                     fontSize: '12px', 

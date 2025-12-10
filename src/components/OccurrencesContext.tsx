@@ -2,10 +2,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import api from '../services/api';
 import { connectSocket, disconnectSocket } from '../services/socket';
 
-// Interface igualzinha à que o Backend devolve
 export interface Occurrence {
-  timestamp(timestamp: any): React.ReactNode;
-  id: string; // Backend usa UUID (string)
+  id: string;
   tipo: string;
   local: string;
   endereco: string;
@@ -13,7 +11,8 @@ export interface Occurrence {
   longitude: number;
   status: 'NOVO' | 'EM_ANALISE' | 'EM_ATENDIMENTO' | 'CONCLUIDO';
   prioridade: string;
-  dataOcorrencia: string; // Vem como string ISO do JSON
+  dataOcorrencia: string; // Vem do backend
+  timestamp: Date; // Usado pelo front (calculado)
   fotos: string[];
 }
 
@@ -22,6 +21,9 @@ interface OccurrencesContextData {
   loading: boolean;
   getStats: () => { pendentes: number; resolvidos: number; total: number };
   refreshData: () => Promise<void>;
+  addOccurrence: (data: any) => Promise<void>;
+  updateOccurrence: (id: any, data: any) => Promise<void>;
+  deleteOccurrence: (id: any) => Promise<void>;
 }
 
 const OccurrencesContext = createContext<OccurrencesContextData>({} as OccurrencesContextData);
@@ -30,12 +32,22 @@ export const OccurrencesProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 1. Função que busca a lista inicial do banco
   const fetchOccurrences = async () => {
     try {
       const response = await api.get('/occurrences');
-      // O backend retorna: { success: true, data: [...] }
-      setOccurrences(response.data.data);
+      const rawData = response.data.data || [];
+
+      // Mapeia os dados garantindo que lat/lng sejam números e criando o timestamp
+      const formattedData = rawData.map((occ: any) => ({
+        ...occ,
+        latitude: Number(occ.latitude),
+        longitude: Number(occ.longitude),
+        // O Dashboard precisa de um objeto Date no campo timestamp
+        timestamp: occ.dataOcorrencia ? new Date(occ.dataOcorrencia) : new Date(),
+      }));
+
+      console.log("Dados carregados do Backend:", formattedData.length, "ocorrências");
+      setOccurrences(formattedData);
     } catch (error) {
       console.error('Erro ao buscar ocorrências:', error);
     } finally {
@@ -43,28 +55,65 @@ export const OccurrencesProvider: React.FC<{ children: ReactNode }> = ({ childre
     }
   };
 
+  const addOccurrence = async (data: any) => {
+    try {
+      // Envia para o backend (o backend agora geocodifica sozinho)
+      await api.post('/occurrences', data);
+      // Não precisamos adicionar manualmente no state pois o Socket.io vai avisar
+    } catch (error) {
+      console.error("Erro ao adicionar:", error);
+      alert("Erro ao salvar ocorrência. Verifique o console.");
+    }
+  };
+
+  const updateOccurrence = async (id: any, data: any) => {
+    try {
+      await api.put(`/occurrences/${id}`, data);
+    } catch (error) {
+      console.error("Erro ao atualizar:", error);
+    }
+  };
+
+  const deleteOccurrence = async (id: any) => {
+    try {
+      await api.delete(`/occurrences/${id}`);
+    } catch (error) {
+      console.error("Erro ao excluir:", error);
+    }
+  };
+
   useEffect(() => {
-    // Carrega dados ao abrir a tela
     fetchOccurrences();
 
-    // 2. Conecta no WebSocket para ouvir novidades
     const socket = connectSocket();
 
-    // Ouve quando uma nova ocorrência é criada
-    socket.on('occurrence:new', (newOcc: Occurrence) => {
-      console.log('🔔 Nova ocorrência recebida via Socket:', newOcc);
-      setOccurrences((prev) => [newOcc, ...prev]);
+    socket.on('occurrence:new', (newOcc: any) => {
+      console.log('🔔 Nova ocorrência via Socket:', newOcc);
+      const safeOcc = { 
+        ...newOcc, 
+        latitude: Number(newOcc.latitude),
+        longitude: Number(newOcc.longitude),
+        timestamp: newOcc.dataOcorrencia ? new Date(newOcc.dataOcorrencia) : new Date() 
+      };
+      setOccurrences((prev) => [safeOcc, ...prev]);
     });
 
-    // Ouve quando um status muda
-    socket.on('occurrence:update', (updatedOcc: Occurrence) => {
-      console.log('🔄 Ocorrência atualizada:', updatedOcc);
+    socket.on('occurrence:update', (updatedOcc: any) => {
       setOccurrences((prev) =>
-        prev.map((occ) => (occ.id === updatedOcc.id ? updatedOcc : occ))
+        prev.map((occ) => {
+          if (occ.id === updatedOcc.id) {
+            return {
+              ...updatedOcc,
+              latitude: Number(updatedOcc.latitude),
+              longitude: Number(updatedOcc.longitude),
+              timestamp: updatedOcc.dataOcorrencia ? new Date(updatedOcc.dataOcorrencia) : new Date()
+            };
+          }
+          return occ;
+        })
       );
     });
 
-    // Limpeza ao sair
     return () => {
       socket.off('occurrence:new');
       socket.off('occurrence:update');
@@ -79,7 +128,15 @@ export const OccurrencesProvider: React.FC<{ children: ReactNode }> = ({ childre
   };
 
   return (
-    <OccurrencesContext.Provider value={{ occurrences, loading, getStats, refreshData: fetchOccurrences }}>
+    <OccurrencesContext.Provider value={{ 
+      occurrences, 
+      loading, 
+      getStats, 
+      refreshData: fetchOccurrences,
+      addOccurrence,
+      updateOccurrence,
+      deleteOccurrence
+    }}>
       {children}
     </OccurrencesContext.Provider>
   );

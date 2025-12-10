@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useOccurrences } from "../components/OccurrencesContext";
+import { geocodeAddress } from "../utils/mapUtils"; // Usa a função centralizada
 import "../styles/Dashboard.css";
 
 interface AddOccurrenceModalProps {
@@ -12,6 +13,7 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
   onClose,
 }) => {
   const { addOccurrence } = useOccurrences();
+  const [isSearching, setIsSearching] = useState(false);
 
   const [formData, setFormData] = useState({
     tipo: "",
@@ -21,7 +23,7 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
     responsavel: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.tipo || !formData.local) {
@@ -29,12 +31,30 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
       return;
     }
 
+    setIsSearching(true);
+
+    // 1. Busca coordenadas reais
+    const coords = await geocodeAddress(formData.local);
+
+    // 2. Se falhar, usa padrão (Centro Recife) e avisa
+    const finalLat = coords ? coords.lat : -8.0476;
+    const finalLng = coords ? coords.lng : -34.8770;
+
+    if (!coords) {
+      alert("Endereço não encontrado com precisão. Salvando no centro de Recife.");
+    }
+
+    // 3. Salva
     addOccurrence({
       ...formData,
+      latitude: finalLat,
+      longitude: finalLng,
       data: "Agora",
     });
 
-    // Reset form
+    setIsSearching(false);
+
+    // Reset
     setFormData({
       tipo: "",
       local: "",
@@ -47,14 +67,9 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
   };
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   if (!isOpen) return null;
@@ -75,16 +90,8 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
         <form onSubmit={handleSubmit} className="modal-form">
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="tipo">
-                Tipo de Ocorrência <span className="required">*</span>
-              </label>
-              <select
-                id="tipo"
-                name="tipo"
-                value={formData.tipo}
-                onChange={handleChange}
-                required
-              >
+              <label htmlFor="tipo">Tipo <span className="required">*</span></label>
+              <select id="tipo" name="tipo" value={formData.tipo} onChange={handleChange} required>
                 <option value="">Selecione...</option>
                 <option value="Risco">Risco</option>
                 <option value="Alagamento">Alagamento</option>
@@ -95,15 +102,9 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
                 <option value="Outros">Outros</option>
               </select>
             </div>
-
             <div className="form-group">
               <label htmlFor="status">Status</label>
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-              >
+              <select id="status" name="status" value={formData.status} onChange={handleChange}>
                 <option value="Novo">Novo</option>
                 <option value="Em Análise">Em Análise</option>
                 <option value="Concluído">Concluído</option>
@@ -112,51 +113,25 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
           </div>
 
           <div className="form-group">
-            <label htmlFor="local">
-              Local <span className="required">*</span>
-            </label>
-            <input
-              type="text"
-              id="local"
-              name="local"
-              value={formData.local}
-              onChange={handleChange}
-              placeholder="Ex: Rua Principal, 123"
-              required
-            />
+            <label htmlFor="local">Local <span className="required">*</span></label>
+            <input type="text" id="local" name="local" value={formData.local} onChange={handleChange} placeholder="Ex: Av. Boa Viagem, 1500" required />
           </div>
 
           <div className="form-group">
             <label htmlFor="responsavel">Responsável</label>
-            <input
-              type="text"
-              id="responsavel"
-              name="responsavel"
-              value={formData.responsavel}
-              onChange={handleChange}
-              placeholder="Nome do responsável"
-            />
+            <input type="text" id="responsavel" name="responsavel" value={formData.responsavel} onChange={handleChange} placeholder="Nome do responsável" />
           </div>
 
           <div className="form-group">
             <label htmlFor="descricao">Descrição</label>
-            <textarea
-              id="descricao"
-              name="descricao"
-              value={formData.descricao}
-              onChange={handleChange}
-              placeholder="Descreva os detalhes da ocorrência..."
-              rows={4}
-            />
+            <textarea id="descricao" name="descricao" value={formData.descricao} onChange={handleChange} placeholder="Detalhes..." rows={4} />
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn-primary">
-              <i className="fas fa-save"></i>
-              Registrar Ocorrência
+            <button type="button" className="btn-secondary" onClick={onClose} disabled={isSearching}>Cancelar</button>
+            <button type="submit" className="btn-primary" disabled={isSearching}>
+              <i className={isSearching ? "fas fa-spinner fa-spin" : "fas fa-save"}></i>
+              {isSearching ? " Buscando..." : " Registrar"}
             </button>
           </div>
         </form>

@@ -1,32 +1,27 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // 1. Importar useNavigate
 import { useOccurrences } from "../components/OccurrencesContext";
 import AddOccurrenceModal from "./AddOccurrenceModal";
 import "../styles/Dashboard.css";
 
 const DashboardContent: React.FC = () => {
+  const navigate = useNavigate(); // 2. Inicializar o hook de navegação
   const { occurrences, getStats } = useOccurrences();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const stats = getStats();
 
-  // Pega as 5 ocorrências mais recentes
-  const recentOccurrences = occurrences.slice(0, 5);
+  // Mantendo o limite de 4 ocorrências que configuramos antes
+  const recentOccurrences = occurrences.slice(0, 4);
 
-  // --- FUNÇÃO CORRIGIDA ---
   const formatRelativeTime = (timestamp: any) => {
-    // 1. Se não existir timestamp, retorna um traço
     if (!timestamp) return "-";
-
-    // 2. Garante que é um objeto Date
     const dateObj = new Date(timestamp);
-
-    // 3. Verifica se a data é válida
     if (isNaN(dateObj.getTime())) return "Data inválida";
 
     const now = new Date();
     const diff = now.getTime() - dateObj.getTime();
     
-    // Evita tempos negativos se a data do servidor estiver um pouco à frente
     if (diff < 0) return "Agora";
 
     const minutes = Math.floor(diff / 60000);
@@ -39,7 +34,6 @@ const DashboardContent: React.FC = () => {
     if (days === 1) return "Ontem";
     return `Há ${days} dias`;
   };
-  // ------------------------
 
   return (
     <div className="dashboard-main-content">
@@ -53,15 +47,20 @@ const DashboardContent: React.FC = () => {
 
       {/* CARDS DE NAVEGAÇÃO/RESUMO */}
       <section className="nav-cards-container">
-        <div className="nav-card">
+        {/* Configurei este também para ir para a lista de ocorrências, para ficar completo */}
+        <div className="nav-card" onClick={() => navigate('/occurrences')}>
           <i className="fas fa-exclamation-triangle"></i>
           <span>Ocorrências Críticas</span>
         </div>
-        <div className="nav-card">
+
+        {/* 3. Navegação para o Mapa */}
+        <div className="nav-card" onClick={() => navigate('/map')}>
           <i className="fas fa-map-marker-alt"></i>
           <span>Mapa de Localizações</span>
         </div>
-        <div className="nav-card">
+
+        {/* 4. Navegação para Relatórios */}
+        <div className="nav-card" onClick={() => navigate('/reports')}>
           <i className="fas fa-chart-bar"></i>
           <span>Relatórios Gerenciais</span>
         </div>

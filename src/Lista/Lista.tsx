@@ -1,10 +1,12 @@
 import React from "react";
+// 1. Importar o hook de contexto
+import { useOccurrences } from "../components/OccurrencesContext";
 import OccurrenceList from "../components/OccurrenceList";
 import "./Lista.css";
 
 const Lista: React.FC = () => {
-  // OBS: Removemos useEffect de autenticação pois o DashboardLayout já protege a rota
-  // Removemos Header e Sidebar importados manualmente
+  // 2. Pegar as ocorrências reais
+  const { occurrences } = useOccurrences();
 
   return (
     <div className="dashboard-main-content">
@@ -14,18 +16,22 @@ const Lista: React.FC = () => {
         <div className="summary-cards">
           <div className="summary-card">
             <h3>Ocorrências do dia</h3>
-            <div className="card-value">6</div>
+            <div className="card-value">{occurrences.length}</div> {/* Atualizado dinamicamente */}
           </div>
 
           <div className="summary-card">
             <h3>Ocorrências por status</h3>
             <div className="status-values">
               <div className="status-item">
-                <span className="value pending">4</span>
+                <span className="value pending">
+                  {occurrences.filter(o => o.status !== 'Concluído').length}
+                </span>
                 <span className="label">Pendentes</span>
               </div>
               <div className="status-item">
-                <span className="value resolved">2</span>
+                <span className="value resolved">
+                  {occurrences.filter(o => o.status === 'Concluído').length}
+                </span>
                 <span className="label">Resolvidos</span>
               </div>
             </div>
@@ -36,6 +42,10 @@ const Lista: React.FC = () => {
         <div className="filters-section">
           <select className="filter-select">
             <option>Data de início</option>
+          </select>
+          
+          <select className="filter-select">
+            <option>Data de fim</option>
           </select>
           
           <select className="filter-select">
@@ -55,7 +65,8 @@ const Lista: React.FC = () => {
         </div>
 
         {/* Lista de Ocorrências */}
-        <OccurrenceList />
+        {/* 3. Passar a prop 'occurrences' com os dados reais */}
+        <OccurrenceList occurrences={occurrences} />
       </div>
     </div>
   );

@@ -3,16 +3,11 @@ import { OpenStreetMapProvider } from "leaflet-geosearch";
 
 // Cores dos marcadores por status
 export const getMarkerColor = (status: string): string => {
-  switch (status) {
-    case "Novo":
-      return "#3b82f6";
-    case "Em Análise":
-      return "#f59e0b";
-    case "Concluído":
-      return "#10b981";
-    default:
-      return "#6b7280";
-  }
+  const normalized = (status || "").toLowerCase();
+  if (normalized.includes("novo")) return "#3b82f6";
+  if (normalized.includes("análise") || normalized.includes("analise")) return "#f59e0b";
+  if (normalized.includes("concluído") || normalized.includes("concluido")) return "#10b981";
+  return "#6b7280";
 };
 
 // Criar ícone customizado
@@ -37,49 +32,49 @@ export const createCustomIcon = (color: string): L.DivIcon => {
   });
 };
 
-// Buscar endereço
+// --- NOVA FUNÇÃO DE GEOCODIFICAÇÃO (Retorna lat/lng) ---
+export const geocodeAddress = async (address: string): Promise<{lat: number, lng: number} | null> => {
+  if (!address) return null;
+  
+  const provider = new OpenStreetMapProvider();
+  // Adiciona contexto para melhorar a busca
+  const query = `${address}, Pernambuco, Brasil`;
+
+  try {
+    const results = await provider.search({ query });
+    if (results && results.length > 0) {
+      return { lat: results[0].y, lng: results[0].x };
+    }
+  } catch (error) {
+    console.error("Erro ao buscar endereço:", error);
+  }
+  return null;
+};
+
+// Buscar endereço e mover o mapa (Função visual)
 export const searchAddress = async (
   searchQuery: string,
   map: L.Map | null
 ): Promise<boolean> => {
   if (!map || !searchQuery.trim()) return false;
 
-  const provider = new OpenStreetMapProvider();
+  const coords = await geocodeAddress(searchQuery);
 
-  const fullQuery = searchQuery.includes("PE") || searchQuery.includes("Pernambuco")
-    ? searchQuery
-    : `${searchQuery}, Pernambuco, Brasil`;
-
-  const results = await provider.search({ query: fullQuery });
-
-  if (results && results.length > 0) {
-    const peResults = results.filter(
-      (r) =>
-        r.label.includes("Pernambuco") ||
-        r.label.includes("PE") ||
-        r.label.includes("Recife")
-    );
-
-    const result = peResults.length > 0 ? peResults[0] : results[0];
-
+  if (coords) {
+    // Validação simples para manter foco em PE (aprox)
     const isPernambuco =
-      result.y >= -9.5 &&
-      result.y <= -7.0 &&
-      result.x >= -41.5 &&
-      result.x <= -34.0;
+      coords.lat >= -9.5 && coords.lat <= -7.0 &&
+      coords.lng >= -41.5 && coords.lng <= -34.0;
 
     if (!isPernambuco) {
-      alert(
-        "⚠️ Endereço fora de Pernambuco. Tente especificar o endereço em Recife ou Pernambuco."
-      );
-      return false;
+      alert("⚠️ Endereço encontrado fora de Pernambuco/Recife. Verifique se está correto.");
     }
 
-    map.setView([result.y, result.x], 16);
+    map.setView([coords.lat, coords.lng], 16);
 
-    const tempMarker = L.marker([result.y, result.x])
+    const tempMarker = L.marker([coords.lat, coords.lng])
       .addTo(map)
-      .bindPopup(`<strong>📍 ${result.label}</strong>`)
+      .bindPopup(`<strong>📍 Resultado da Busca</strong>`)
       .openPopup();
 
     setTimeout(() => {
@@ -88,30 +83,17 @@ export const searchAddress = async (
 
     return true;
   } else {
-    alert("Endereço não encontrado. Tente outro.");
+    alert("Endereço não encontrado. Tente ser mais específico.");
     return false;
   }
 };
 
-// Adicionar coordenadas às ocorrências
-export const addCoordinatesToOccurrences = (
-  occurrences: any[],
-  centerLat: number,
-  centerLng: number
-) => {
-  return occurrences.map((occ) => ({
-    ...occ,
-    lat: centerLat + (Math.random() - 0.5) * 0.1,
-    lng: centerLng + (Math.random() - 0.5) * 0.1,
-  }));
-};
-
-// Calcular contagens de filtros
 export const calculateFilterCounts = (occurrences: any[]) => {
+  const normalize = (s: string) => (s || "").toLowerCase();
   return {
     all: occurrences.length,
-    novo: occurrences.filter((occ) => occ.status === "Novo").length,
-    emAnalise: occurrences.filter((occ) => occ.status === "Em Análise").length,
-    concluido: occurrences.filter((occ) => occ.status === "Concluído").length,
+    novo: occurrences.filter((occ) => normalize(occ.status).includes("novo")).length,
+    emAnalise: occurrences.filter((occ) => normalize(occ.status).includes("analise")).length,
+    concluido: occurrences.filter((occ) => normalize(occ.status).includes("concluido")).length,
   };
 };

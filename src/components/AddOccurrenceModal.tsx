@@ -26,6 +26,31 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
     prioridade: "MEDIA",
   });
 
+  // ✅ FUNÇÃO DE GEOCODING NO FRONTEND
+  const geocodeAddress = async (endereco: string): Promise<{lat: number, lng: number} | null> => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?` +
+        `format=json&q=${encodeURIComponent(endereco)}&` +
+        `countrycodes=br&limit=1&addressdetails=1`
+      );
+      
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon)
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Erro ao fazer geocoding:", error);
+      return null;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro("");
@@ -43,16 +68,35 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
         formData.endereco,
         formData.bairro,
         formData.cidade,
-        formData.estado
+        formData.estado,
+        "Brasil"
       ].filter(Boolean).join(", ");
 
-      // NÃO envia latitude/longitude - deixa o backend fazer o geocoding!
+      console.log("🔍 Fazendo geocoding do endereço:", enderecoCompleto);
+
+      // ✅ FAZ GEOCODING NO FRONTEND
+      const coords = await geocodeAddress(enderecoCompleto);
+      
+      if (!coords) {
+        setErro(
+          `Não foi possível localizar o endereço "${enderecoCompleto}" no mapa. ` +
+          `Verifique se o endereço está correto e tente novamente.`
+        );
+        setLoading(false);
+        return;
+      }
+
+      console.log("✅ Coordenadas encontradas:", coords);
+
+      // ✅ ENVIA COM AS COORDENADAS JÁ RESOLVIDAS
       await addOccurrence({
         tipo: formData.tipo,
         local: formData.local,
         endereco: enderecoCompleto,
         descricao: formData.descricao,
         prioridade: formData.prioridade,
+        latitude: coords.lat,   // ✅ Envia latitude
+        longitude: coords.lng,  // ✅ Envia longitude
       });
 
       // Reset form
@@ -70,7 +114,11 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
       onClose();
     } catch (error: any) {
       console.error("Erro ao criar ocorrência:", error);
-      setErro(error.response?.data?.message || error.message || "Erro ao criar ocorrência. Verifique o endereço.");
+      setErro(
+        error.response?.data?.message || 
+        error.message || 
+        "Erro ao criar ocorrência. Tente novamente."
+      );
     } finally {
       setLoading(false);
     }
@@ -190,7 +238,7 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
               required
             />
             <small style={{ color: "#6b7280", fontSize: "0.8em" }}>
-              Rua e número para localização no mapa
+              ⚠️ Digite o endereço COMPLETO e CORRETO para localização precisa no mapa
             </small>
           </div>
 
@@ -240,7 +288,7 @@ const AddOccurrenceModal: React.FC<AddOccurrenceModalProps> = ({
               {loading ? (
                 <>
                   <i className="fas fa-spinner fa-spin"></i>
-                  Localizando endereço...
+                  Localizando endereço no mapa...
                 </>
               ) : (
                 <>

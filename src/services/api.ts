@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// A porta do seu backend
-export const baseURL = 'http://localhost:3001';
+// URL do deploy no Railway (SEM /api no final)
+export const baseURL = 'https://backendnovissimo-production.up.railway.app';
 
 const api = axios.create({
   baseURL: `${baseURL}/api`,
@@ -9,7 +9,6 @@ const api = axios.create({
 
 // Interceptor: Pega o token do localStorage e anexa na requisição
 api.interceptors.request.use((config) => {
-  // ATENÇÃO: Quando fizer login, salve o token assim: localStorage.setItem('token', valorDoToken)
   const token = localStorage.getItem('token'); 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

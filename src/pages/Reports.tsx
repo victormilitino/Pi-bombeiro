@@ -37,6 +37,27 @@ const Reports: React.FC = () => {
     location: "todas",
   });
 
+  // ✅ FUNÇÃO PARA TESTAR A IA
+  async function testarIA() {
+    try {
+      const resposta = await fetch("http://localhost:5001/api/predizer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          local: "Boa Viagem",
+          hora: 14,
+          dia_semana: 3
+        })
+      });
+
+      const data = await resposta.json();
+      console.log("✅ Resultado da IA:", data);
+      alert("Resultado da IA enviado para o console!");
+    } catch (error) {
+      console.error("❌ Erro ao chamar IA:", error);
+    }
+  }
+
   /* =======================
      FILTRO BASE DOS DADOS
   ======================== */
@@ -134,6 +155,22 @@ const Reports: React.FC = () => {
             Relatórios de Ocorrências
           </h2>
 
+          {/* ✅ BOTÃO DE TESTE DA IA */}
+          <button
+            style={{
+              padding: "10px 15px",
+              background: "#2563eb",
+              color: "white",
+              borderRadius: "6px",
+              border: "none",
+              cursor: "pointer",
+              marginRight: "10px"
+            }}
+            onClick={testarIA}
+          >
+            Testar IA
+          </button>
+
           <button
             className="btn-export"
             onClick={() => setExportMenuOpen(!exportMenuOpen)}
@@ -220,7 +257,7 @@ const Reports: React.FC = () => {
                   outerRadius={100}
                   label={({ name, percent }) =>
                     `${name} ${((percent || 0) * 100).toFixed(0)}%`
-}
+                  }
                 >
                   {filteredPieData.map((entry, index) => (
                     <Cell key={index} fill={entry.color} />

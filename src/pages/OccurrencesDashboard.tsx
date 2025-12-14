@@ -11,6 +11,7 @@ const palette = [
   "#6b82a7"
 ];
 
+
 const OccurrencesDashboard: React.FC = () => {
   const { occurrences } = useOccurrences();
   const [startDate, setStartDate] = useState("");
